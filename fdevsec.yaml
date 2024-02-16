@@ -1,0 +1,23 @@
+id:
+  org: 2e3b7756-bbaa-4d09-8ee1-8beabd0c6a2c
+  app: 918d2cad-495f-4330-a17d-bd705ea731ac
+
+# If below settings are not configured, scans will be performed for all supported scanners.
+scanners:
+  - sast
+  - sca
+  - secret
+  - iac
+  - container
+
+# Configures languages for sast scanner. If not configured, scans will be performed on all supported languages
+#  - javascript
+#  - python
+
+# Language scanners run sequentially by default. Can be configured to run in parallel.
+resource:
+  serial_scan: false #true|false
+
+# CI/CD pipeline fails when risk rating(range 0-9) exceeds the configured value.
+#fail_pipeline:
+#  risk_rating: 7
