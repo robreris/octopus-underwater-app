@@ -6,8 +6,8 @@ name: AWS ECR push
 
 jobs:
   CheckoutAndScan:
-    runs-on: self-hosted
-    if: ${{ true }}   #for testing
+    runs-on: ubuntu-latest
+    if: ${{ false }}   #for testing
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -18,7 +18,7 @@ jobs:
         docker run --pull always --rm --env-file /tmp/env --mount type=bind,source=$PWD,target=/scan registry.fortidevsec.forticloud.com/fdevsec_sast:latest
 
   BuildPushRedeploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: CheckoutAndScan
     steps:
 
