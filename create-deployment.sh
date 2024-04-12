@@ -1,5 +1,5 @@
 filename="octopus-underwater-app-deployment.yml" 
-ecr_repository=""
+ecr_repository="<insert ecr repo here>"
 
 cat << EOF > $filename
 apiVersion: apps/v1

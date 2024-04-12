@@ -5,49 +5,51 @@ on:
 name: AWS ECR push
 
 jobs:
-  deploy:
-    name: Deploy
+  CheckoutAndScan:
     runs-on: self-hosted
-
+    if: ${{ true }}   #for testing
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: actions/checkout@v3
 
     - name: Run FortiDevSec Scan
-      id: FDS-Scan
       run: |
         env | grep -E "GITHUB_ACTIONS|GITHUB_RUN_NUMBER|GITHUB_REF_NAME|GITHUB_SHA" > /tmp/env
         docker run --pull always --rm --env-file /tmp/env --mount type=bind,source=$PWD,target=/scan registry.fortidevsec.forticloud.com/fdevsec_sast:latest
 
-    - name: Build, tag, and push the image to Amazon ECR and update Kubernetes deployment
-      needs: FDS-Scan
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: octopus-underwater-app
-        IMAGE_TAG: "latest"
+  BuildPushRedeploy:
+    runs-on: self-hosted
+    needs: CheckoutAndScan
+    steps:
 
-      run: |
-        # Build a docker container and push it to ECR 
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        echo "Pushing image to ECR..."
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Update kubeconfig, update deployment to pull new image
-      needs: build-image
-      run:
-           |
-        aws eks update-kubeconfig --name octopus-underwater-app --region us-east-1
-        kubectl rollout restart deployment octopus-underwater-app 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+  
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+  
+      - name: Build, tag, and push the image to Amazon ECR and update Kubernetes deployment
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: octopus-underwater-app
+          IMAGE_TAG: "latest"
+  
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+  
+      - name: Update kubeconfig, update deployment to pull new image
+        run:
+             |
+          aws eks update-kubeconfig --name octopus-demo-app --region us-east-1
+          kubectl rollout restart deployment octopus-underwater-app 
