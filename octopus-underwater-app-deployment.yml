@@ -1,7 +1,3 @@
-filename="octopus-underwater-app-deployment.yml" 
-ecr_repository="228122752878.dkr.ecr.us-east-1.amazonaws.com/octopus-underwater-app:latest"
-
-cat << EOF > $filename
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +18,7 @@ spec:
     spec:
       containers:
         - name: octopus-underwater-app
-          image: $ecr_repository
+          image: 228122752878.dkr.ecr.us-east-1.amazonaws.com/octopus-underwater-app:latest
           ports:
             - containerPort: 80
               protocol: TCP
@@ -60,27 +56,3 @@ spec:
               name: octopus-underwater-app-service
               port:
                 number: 80
-EOF
-
-kubectl apply -f $filename
-apppodname=$(kubectl get pod -l app=octopus-underwater-app -o jsonpath='{.items[0].metadata.name}')
-
-ingressdns=""
-while [ "$ingressdns" == "" ]; do
-  echo "Waiting for ingress resource creation..."
-  ingressdns=$(kubectl get ingress octopus-underwater-app-ingress -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-  sleep 1
-done
-
-echo "Ingress DNS: $ingressdns"
-status=""
-echo -n "Checking app status. Still deploying..."
-while [ ! "$status" == "200" ]; do
-  status=$(curl -o /dev/null -s -w "%{http_code}\n" http://$ingressdns)
-  sleep 1
-  echo -n "."
-done
-echo "Deployment complete."
-echo "App will be availabel momentarily at: http://$ingressdns"
-echo "To delete deployment, service, and ingress:"
-echo "> kubectl delete -f octopus-underwater-app-deployment.yml"

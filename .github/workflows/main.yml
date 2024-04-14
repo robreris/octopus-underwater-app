@@ -7,7 +7,7 @@ name: AWS ECR push
 jobs:
   CheckoutAndScan:
     runs-on: ubuntu-latest
-    if: ${{ false }}   #for testing
+    if: ${{ true }}   #for testing
     steps:
     - name: Checkout
       uses: actions/checkout@v3
